@@ -17,6 +17,12 @@ tiktokConnection.connect().then(() => {
     console.error('❌ Connection failed. Ensure the target user is actively LIVE.', err);
 });
 
+// Helper function to push events with a timestamp
+function queueEvent(eventData) {
+    eventData.timestamp = Date.now(); // Record exactly when this event happened
+    eventQueue.push(eventData);
+}
+
 // 1. Chat Tracking ("spawn" text command -> 1 Zombie2)
 tiktokConnection.on('chat', (data) => {
     const msg = data.comment.toLowerCase();
@@ -24,7 +30,7 @@ tiktokConnection.on('chat', (data) => {
     
     if (msg.includes("spawn")) {
         console.log(`🎯 [CHAT COMMAND] ${data.uniqueId} spawned a Zombie2!`);
-        eventQueue.push({ action: "SpawnSingle", zombieType: "Zombie2", user: data.uniqueId });
+        queueEvent({ action: "SpawnSingle", zombieType: "Zombie2", user: data.uniqueId });
     }
 });
 
@@ -37,7 +43,7 @@ tiktokConnection.on('like', (data) => {
     while (runningLikeCount >= 10) {
         runningLikeCount -= 10;
         console.log(`🧟 [CONVERSION] 10 likes reached! Queuing 1 Zombie1.`);
-        eventQueue.push({ action: "SpawnSingle", zombieType: "Zombie1", user: data.uniqueId });
+        queueEvent({ action: "SpawnSingle", zombieType: "Zombie1", user: data.uniqueId });
     }
 });
 
@@ -49,7 +55,7 @@ tiktokConnection.on('follow', (data) => {
         pastFollowers.add(username);
         console.log(`👑 [NEW FOLLOW] ${username} followed! Queuing 1 Zombie2 and 10 Zombie1s.`);
         
-        eventQueue.push({ 
+        queueEvent({ 
             action: "SpawnComboWave", 
             mainType: "Zombie2", 
             hordeType: "Zombie1", 
@@ -69,14 +75,24 @@ tiktokConnection.on('gift', (data) => {
         
         const calculatedAmount = 1 * data.repeatCount;
         
-        eventQueue.push({ action: "SpawnHorde", zombieType: "Zombie3", amount: calculatedAmount, user: data.uniqueId });
+        queueEvent({ action: "SpawnHorde", zombieType: "Zombie3", amount: calculatedAmount, user: data.uniqueId });
     }
 });
 
-// Roblox Polling Endpoint
+// Roblox Polling Endpoint with Auto-Expiration
 app.get('/get-events', (req, res) => {
-    res.json(eventQueue);
-    eventQueue = []; 
+    const now = Date.now();
+    const MAX_AGE = 10000; // 10 seconds in milliseconds
+
+    // Filter out any events that are older than 10 seconds
+    const freshEvents = eventQueue.filter(event => (now - event.timestamp) <= MAX_AGE);
+    
+    if (eventQueue.length > freshEvents.length) {
+        console.log(`🧹 Cleared ${eventQueue.length - freshEvents.length} old offline events from the queue.`);
+    }
+
+    res.json(freshEvents);
+    eventQueue = []; // Clear the main queue completely
 });
 
 app.listen(PORT, () => {
