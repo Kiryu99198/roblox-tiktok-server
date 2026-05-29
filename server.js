@@ -17,23 +17,22 @@ tiktokConnection.connect().then(() => {
     console.error('❌ Connection failed. Ensure the target user is actively LIVE.', err);
 });
 
-// Helper function to push events with a timestamp
 function queueEvent(eventData) {
     eventData.timestamp = Date.now();
     eventQueue.push(eventData);
 }
 
-// 1. Chat Tracking (Placeholder - We can configure this next!)
+// Chat Tracking Placeholder
 tiktokConnection.on('chat', (data) => {
     console.log(`[CHAT] ${data.uniqueId}: ${data.comment}`);
 });
 
-// 2. Like Tracking (Placeholder - We can configure this next!)
+// Like Tracking Placeholder
 tiktokConnection.on('like', (data) => {
     console.log(`❤️  [LIKE TAPS] ${data.uniqueId} clicked.`);
 });
 
-// 3. Follower Tracking -> Triggers Random Avatar Morph (Anti-Spam Locked 🔒)
+// Follower Tracking -> Triggers Random Avatar Morph
 tiktokConnection.on('follow', (data) => {
     const username = data.uniqueId;
     
@@ -50,14 +49,29 @@ tiktokConnection.on('follow', (data) => {
     }
 });
 
-// 4. Gift Tracking (Placeholder - We can configure this next!)
+// 🎁 Gift Tracking -> Differentiates standard gifts from a Galaxy
 tiktokConnection.on('gift', (data) => {
     if (data.repeatEnd) {
-        console.log(`🎁 [GIFT RECEIVED] ${data.uniqueId} sent ${data.giftName} x${data.repeatCount}`);
+        const username = data.uniqueId;
+        const giftName = data.giftName;
+
+        console.log(`🎁 [GIFT RECEIVED] ${username} sent ${giftName} x${data.repeatCount}`);
+
+        if (giftName === "Galaxy") {
+            queueEvent({
+                action: "GalaxyFire",
+                user: username
+            });
+        } else {
+            queueEvent({
+                action: "GiftSlip",
+                user: username
+            });
+        }
     }
 });
 
-// Roblox Polling Endpoint with Auto-Expiration (10 seconds max age)
+// Roblox Polling Endpoint
 app.get('/get-events', (req, res) => {
     const now = Date.now();
     const MAX_AGE = 10000;
@@ -65,7 +79,7 @@ app.get('/get-events', (req, res) => {
     const freshEvents = eventQueue.filter(event => (now - event.timestamp) <= MAX_AGE);
     
     if (eventQueue.length > freshEvents.length) {
-        console.log(`扫 Cleared ${eventQueue.length - freshEvents.length} old offline events from the queue.`);
+        console.log(`🧹 Cleared ${eventQueue.length - freshEvents.length} old offline events from the queue.`);
     }
 
     res.json(freshEvents);
