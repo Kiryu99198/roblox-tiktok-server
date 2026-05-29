@@ -4,7 +4,7 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 // Target username
-const TIKTOK_USERNAME = "thesaladtosser"; 
+const TIKTOK_USERNAME = "xtaff1"; 
 
 let eventQueue = [];
 let pastFollowers = new Set(); 
