@@ -3,7 +3,6 @@ const express = require('express');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Target username
 const TIKTOK_USERNAME = "xtaff1"; 
 
 let eventQueue = [];
@@ -22,41 +21,31 @@ function queueEvent(eventData) {
     eventQueue.push(eventData);
 }
 
-// Chat Tracking Placeholder
 tiktokConnection.on('chat', (data) => {
     console.log(`[CHAT] ${data.uniqueId}: ${data.comment}`);
 });
 
-// Like Tracking Placeholder
 tiktokConnection.on('like', (data) => {
     console.log(`❤️  [LIKE TAPS] ${data.uniqueId} clicked.`);
 });
 
-// Follower Tracking -> Triggers Random Avatar Morph
 tiktokConnection.on('follow', (data) => {
     const username = data.uniqueId;
-    
     if (!pastFollowers.has(username)) {
         pastFollowers.add(username);
-        console.log(`👑 [NEW FOLLOW] ${username} followed! Queuing Avatar Morph.`);
-        
-        queueEvent({ 
-            action: "AvatarMorph", 
-            user: username 
-        });
-    } else {
-        console.log(`🚫 [ANTI-SPAM] Blocked duplicate follow morph for ${username}`);
+        queueEvent({ action: "AvatarMorph", user: username });
     }
 });
 
-// 🎁 Gift Tracking -> Differentiates standard gifts from a Galaxy
+// 🎁 GIFT ROUTING LOGIC
 tiktokConnection.on('gift', (data) => {
     if (data.repeatEnd) {
         const username = data.uniqueId;
         const giftName = data.giftName;
 
-        console.log(`🎁 [GIFT RECEIVED] ${username} sent ${giftName} x${data.repeatCount}`);
+        console.log(`🎁 [GIFT RECEIVED] ${username} sent ${giftName}`);
 
+        // ONLY Galaxy sets you on fire, ALL other gifts force a physics slip
         if (giftName === "Galaxy") {
             queueEvent({
                 action: "GalaxyFire",
@@ -71,21 +60,14 @@ tiktokConnection.on('gift', (data) => {
     }
 });
 
-// Roblox Polling Endpoint
 app.get('/get-events', (req, res) => {
     const now = Date.now();
     const MAX_AGE = 10000;
-
     const freshEvents = eventQueue.filter(event => (now - event.timestamp) <= MAX_AGE);
-    
-    if (eventQueue.length > freshEvents.length) {
-        console.log(`🧹 Cleared ${eventQueue.length - freshEvents.length} old offline events from the queue.`);
-    }
-
     res.json(freshEvents);
     eventQueue = []; 
 });
 
 app.listen(PORT, () => {
-    console.log(`🚀 TikTok Obby Chaos Engine running on port ${PORT}`);
+    console.log(`🚀 TikTok Chaos Engine running on port ${PORT}`);
 });
