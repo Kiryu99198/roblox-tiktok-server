@@ -3,7 +3,7 @@ const express = require('express');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-const TIKTOK_USERNAME = "breezydontcheatttonfn"; 
+const TIKTOK_USERNAME = "kampi_123"; 
 
 let eventQueue = [];
 let pastFollowers = new Set(); 
