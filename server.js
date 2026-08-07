@@ -2,13 +2,16 @@ const { WebcastPushConnection } = require('tiktok-live-connector');
 const express = require('express');
 const app = express();
 const PORT = process.env.PORT || 3000;
-
-const TIKTOK_USERNAME = "kampi_123"; 
+const TIKTOK_USERNAME = "kampi_123";
 
 let eventQueue = [];
-let pastFollowers = new Set(); 
+let pastFollowers = new Set();
 
-let tiktokConnection = new WebcastPushConnection(TIKTOK_USERNAME);
+// PUTAPHEREEEEE -> your Euler Stream key lives in Render's Environment tab
+// as EULER_API_KEY, never hardcoded here.
+let tiktokConnection = new WebcastPushConnection(TIKTOK_USERNAME, {
+    signApiKey: process.env.EULER_API_KEY
+});
 
 tiktokConnection.connect().then(() => {
     console.info(`✅ Connected to TikTok Live stream room!`);
@@ -42,9 +45,7 @@ tiktokConnection.on('gift', (data) => {
     if (data.repeatEnd) {
         const username = data.uniqueId;
         const giftName = data.giftName;
-
         console.log(`🎁 [GIFT RECEIVED] ${username} sent ${giftName}`);
-
         // ONLY Galaxy sets you on fire, ALL other gifts force a physics slip
         if (giftName === "Galaxy") {
             queueEvent({
@@ -65,7 +66,7 @@ app.get('/get-events', (req, res) => {
     const MAX_AGE = 10000;
     const freshEvents = eventQueue.filter(event => (now - event.timestamp) <= MAX_AGE);
     res.json(freshEvents);
-    eventQueue = []; 
+    eventQueue = [];
 });
 
 app.listen(PORT, () => {
