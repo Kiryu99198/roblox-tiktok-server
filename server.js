@@ -13,6 +13,9 @@ let tiktokConnection = new WebcastPushConnection(TIKTOK_USERNAME, {
     signApiKey: process.env.EULER_API_KEY
 });
 
+// TEMP DEBUG - remove this line once we confirm the key is loading correctly
+console.log("Key loaded:", !!process.env.EULER_API_KEY, "starts with:", process.env.EULER_API_KEY?.slice(0, 6));
+
 tiktokConnection.connect().then(() => {
     console.info(`✅ Connected to TikTok Live stream room!`);
 }).catch(err => {
